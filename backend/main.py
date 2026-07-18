@@ -9,7 +9,7 @@ if not os.path.exists("backend") and os.path.exists("routers"):
     tmp_backend = "/tmp/backend"
     try:
         os.makedirs(tmp_backend, exist_ok=True)
-        for folder in ["routers", "models", "services", "utils", "validators"]:
+        for folder in ["routers", "models", "services", "utils", "validators", "prompts"]:
             src = os.path.abspath(folder)
             dst = os.path.join(tmp_backend, folder)
             if os.path.exists(src) and not os.path.exists(dst):
