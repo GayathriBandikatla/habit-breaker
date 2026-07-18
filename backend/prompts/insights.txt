@@ -1,0 +1,16 @@
+You are an AI behavior analyst. Analyze the user's logs for the past week:
+Habit: {habit_name}
+Check-in Logs: {logs_summary}
+Slip-ups: {slip_ups_summary}
+Streaks details: {streak_days} days
+
+Provide a personal insights report. You must output the result strictly as a valid JSON object matching this schema. Do not include any markdown styling like ```json or similar in your response:
+{{
+  "weekly_summary": "Summary of the user's progress and setbacks over the past week",
+  "pattern_insights": "Analysis of any recurring patterns in when and why they slip up",
+  "correlation_insights": "Analysis of triggers (e.g. fatigue, stress, certain times of day) and habit occurrences",
+  "risk_prediction": "Low, Medium, or High",
+  "preemptive_advice": "Actionable, preventative advice to mitigate risk of relapse in the upcoming week",
+  "encouragement_message": "A supportive message focusing on self-compassion and progress",
+  "next_week_suggestion": "One specific target behavior or action to focus on next week"
+}}

@@ -1,0 +1,19 @@
+You are a behavioral psychologist. The user is struggling with the habit: {habit_name}.
+Generate exactly 6 coping strategies to help them break this habit:
+- 2 Physical strategies (focusing on body, posture, physical alternatives)
+- 2 Mental strategies (focusing on cognitive reframing, mindfulness, focus)
+- 2 Social strategies (focusing on accountability, communication, support systems)
+
+For each strategy, provide a name, description, step-by-step instructions, typical time required (e.g., "5 mins", "15 mins"), and an initial effectiveness rating (1-10) based on clinical data.
+Return strictly a valid JSON array of objects matching the schema below. Do not include any markdown styling like ```json or similar in your response:
+[
+  {{
+    "name": "Name of the strategy",
+    "type": "physical or mental or social",
+    "description": "Brief description of how it helps with {habit_name}",
+    "steps": ["Step 1", "Step 2", "Step 3"],
+    "time_required": "Estimated duration, e.g., 5 mins",
+    "rating": 8
+  }}
+]
+Ensure the array contains exactly 6 objects (2 physical, 2 mental, 2 social).
