@@ -1,20 +1,55 @@
+import os
 import threading
-from backend.models.tracking import HabitState, Badge, CheckIn
+import json
 from datetime import datetime, date
 from typing import Any
+from backend.models.tracking import HabitState, Badge, CheckIn
 
 class GlobalState:
     def __init__(self):
-        self._state = HabitState()
         self._lock = threading.Lock()
+        
+        # Decide file path: if on Vercel or /tmp exists, save in /tmp, otherwise save in backend directory
+        if os.getenv("VERCEL") or os.path.exists("/tmp"):
+            self._state_file = "/tmp/habit_state.json"
+        else:
+            current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            self._state_file = os.path.join(current_dir, "habit_state.json")
+            
+        self._state = HabitState()
+        self._load_from_file()
+
+    def _load_from_file(self):
+        try:
+            if os.path.exists(self._state_file):
+                with open(self._state_file, "r", encoding="utf-8") as f:
+                    content = f.read().strip()
+                    if content:
+                        self._state = HabitState.model_validate_json(content)
+                        return
+        except Exception as e:
+            # Fall back to empty state
+            pass
+        self._state = HabitState()
+
+    def _save_to_file(self):
+        try:
+            # Ensure containing directory exists
+            os.makedirs(os.path.dirname(os.path.abspath(self._state_file)), exist_ok=True)
+            with open(self._state_file, "w", encoding="utf-8") as f:
+                f.write(self._state.model_dump_json())
+        except Exception as e:
+            pass
 
     def get_state(self) -> HabitState:
         with self._lock:
+            self._load_from_file()
             return self._state
 
     def reset_state(self):
         with self._lock:
             self._state = HabitState()
+            self._save_to_file()
 
     def set_habit(self, name: str, assessment_data: Any):
         with self._lock:
@@ -30,13 +65,16 @@ class GlobalState:
 
             # Award initial onboarding badge
             self.award_badge_unlocked("onboarding_complete", "Fresh Start", "Completed habit assessment and set goals!")
+            self._save_to_file()
 
     def add_chat_message(self, role: str, content: str):
         with self._lock:
             self._state.chat_history.append({"role": role, "content": content})
+            self._save_to_file()
 
     def get_chat_history(self) -> list:
         with self._lock:
+            self._load_from_file()
             return self._state.chat_history
 
     def add_check_in(self, status: str, notes: str = None) -> CheckIn:
@@ -85,11 +123,11 @@ class GlobalState:
                 self.award_badge_unlocked("resilience", "Resilience Starter", "Logged a slip-up. Recovery starts now!")
 
             self._state.last_check_in_date = today_str
+            self._save_to_file()
             return new_check_in
 
     def award_badge_unlocked(self, badge_id: str, name: str, description: str):
         # Assumes lock is already acquired or does its own locking if needed
-        # To avoid double lock, let's verify if already exists
         exists = any(b.id == badge_id for b in self._state.badges)
         if not exists:
             self._state.badges.append(
@@ -105,6 +143,7 @@ class GlobalState:
     def update_coping_rating(self, strategy_name: str, rating: float):
         with self._lock:
             self._state.coping_ratings[strategy_name] = rating
+            self._save_to_file()
 
-from typing import Any
 global_state = GlobalState()
+
