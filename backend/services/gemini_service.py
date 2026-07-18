@@ -21,7 +21,7 @@ else:
     genai.configure(api_key=api_key)
 
 class GeminiService:
-    def __init__(self, model_name: str = "gemini-3.5-flash"):
+    def __init__(self, model_name: str = "gemini-3.1-flash-lite"):
         self.model_name = model_name
 
     def _load_prompt_template(self, prompt_name: str) -> str:
