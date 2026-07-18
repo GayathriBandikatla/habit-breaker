@@ -1,4 +1,24 @@
 import os
+import sys
+
+# Vercel Monorepo Path Resolution:
+# When Vercel builds the backend in isolation, the 'backend' folder contents are placed at root.
+# Thus, 'from backend.routers import ...' fails because there is no 'backend' folder.
+# We create a virtual 'backend' package in /tmp containing symlinks to our directories.
+if not os.path.exists("backend") and os.path.exists("routers"):
+    tmp_backend = "/tmp/backend"
+    try:
+        os.makedirs(tmp_backend, exist_ok=True)
+        for folder in ["routers", "models", "services", "utils", "validators"]:
+            src = os.path.abspath(folder)
+            dst = os.path.join(tmp_backend, folder)
+            if os.path.exists(src) and not os.path.exists(dst):
+                os.symlink(src, dst, target_is_directory=True)
+        if "/tmp" not in sys.path:
+            sys.path.insert(0, "/tmp")
+    except Exception:
+        pass
+
 import json
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
