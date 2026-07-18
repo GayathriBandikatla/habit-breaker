@@ -39,6 +39,11 @@ class GeminiService:
 
     def generate_text(self, prompt_name: str, variables: Dict[str, Any], retries: int = 3, backoff: float = 1.0) -> str:
         """Generates simple text response from Gemini API."""
+        if not os.getenv("GEMINI_API_KEY"):
+            raise HTTPException(
+                status_code=500,
+                detail="GEMINI_API_KEY is missing. Please add the GEMINI_API_KEY environment variable in your Vercel project settings."
+            )
         template = self._load_prompt_template(prompt_name)
         prompt_content = template.format(**variables)
 
@@ -66,6 +71,11 @@ class GeminiService:
 
     def generate_json(self, prompt_name: str, variables: Dict[str, Any], retries: int = 3, backoff: float = 1.0) -> Dict[str, Any]:
         """Generates structured JSON response from Gemini API."""
+        if not os.getenv("GEMINI_API_KEY"):
+            raise HTTPException(
+                status_code=500,
+                detail="GEMINI_API_KEY is missing. Please add the GEMINI_API_KEY environment variable in your Vercel project settings."
+            )
         template = self._load_prompt_template(prompt_name)
         prompt_content = template.format(**variables)
 
