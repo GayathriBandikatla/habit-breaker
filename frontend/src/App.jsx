@@ -27,11 +27,13 @@ export default function App() {
     { id: 'nudges', label: 'Nudges', icon: Flame },
   ];
 
-  const handleReset = () => {
+  const handleReset = async () => {
     if (window.confirm("Are you sure you want to reset your habit plan? This will clear all check-ins, points, and badges.")) {
-      // Clear localStorage or hit endpoint to reset
-      fetch('/api/assessment', { method: 'POST', body: JSON.stringify({}) }) // will fail validation, but we can do local reset or state reload
-      // We can just clear it locally or reload
+      try {
+        await fetch('/api/assessment/reset', { method: 'POST' });
+      } catch (err) {
+        console.error("Failed to reset backend state:", err);
+      }
       localStorage.clear();
       window.location.reload();
     }

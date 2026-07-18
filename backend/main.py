@@ -69,6 +69,11 @@ else:
         "http://127.0.0.1:3000"
     ]
 
+import zlib
+import base64
+from backend.models.tracking import HabitState
+from backend.utils.state import state_var
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
@@ -76,6 +81,51 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.middleware("http")
+async def state_middleware(request: Request, call_next):
+    # 1. Load state from cookie
+    cookie_val = request.cookies.get("habit_state")
+    state_obj = None
+    if cookie_val:
+        try:
+            compressed = base64.b64decode(cookie_val.encode('utf-8'))
+            json_str = zlib.decompress(compressed).decode('utf-8')
+            state_obj = HabitState.model_validate_json(json_str)
+        except Exception:
+            pass
+            
+    if not state_obj:
+        state_obj = HabitState()
+        
+    # Set context variable
+    token = state_var.set(state_obj)
+    
+    # 2. Proceed with request
+    response = await call_next(request)
+    
+    # 3. Save state to cookie
+    try:
+        updated_state = state_var.get()
+        if updated_state:
+            json_str = updated_state.model_dump_json()
+            compressed = zlib.compress(json_str.encode('utf-8'))
+            serialized = base64.b64encode(compressed).decode('utf-8')
+            # Set cookie with 30-day expiration
+            response.set_cookie(
+                key="habit_state",
+                value=serialized,
+                path="/",
+                max_age=30*24*60*60,
+                samesite="lax",
+                secure=False # Set secure=False for HTTP local testing compatibility
+            )
+    except Exception:
+        pass
+        
+    state_var.reset(token)
+    return response
+
 
 # Root endpoints
 @app.get("/")

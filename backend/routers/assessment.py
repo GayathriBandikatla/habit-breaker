@@ -48,3 +48,10 @@ def get_assessment(request: Request):
         raise HTTPException(status_code=404, detail="No assessment found. Please complete the assessment form first.")
     return state.assessment
 
+@router.post("/reset")
+@limiter.limit("60/minute")
+def reset_assessment(request: Request):
+    global_state.reset_state()
+    return {"message": "State reset successfully"}
+
+
