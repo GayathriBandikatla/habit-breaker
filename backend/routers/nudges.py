@@ -1,17 +1,19 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from backend.models.responses import NudgeRequest, NudgeResponse
 from backend.validators.input_validators import sanitize_text
 from backend.services.gemini_service import gemini_service
 from backend.utils.state import global_state
+from backend.utils.limiter import limiter
 from datetime import datetime
 
 router = APIRouter(prefix="/nudges", tags=["nudges"])
 
 @router.post("/generate", response_model=NudgeResponse)
-def generate_nudge(request: NudgeRequest):
+@limiter.limit("60/minute")
+def generate_nudge(request: Request, input_data: NudgeRequest):
     # Sanitize inputs
-    mood = sanitize_text(request.triggers_or_mood)
-    activity = sanitize_text(request.previous_activity)
+    mood = sanitize_text(input_data.triggers_or_mood)
+    activity = sanitize_text(input_data.previous_activity)
 
     if not mood or not activity:
         raise HTTPException(status_code=400, detail="Mood and previous activity are required.")
@@ -31,3 +33,4 @@ def generate_nudge(request: NudgeRequest):
         return NudgeResponse(**nudge_json)
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Failed to generate nudge: {str(e)}")
+

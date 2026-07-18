@@ -1,13 +1,15 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from backend.models.responses import InsightsResponse
 from backend.services.gemini_service import gemini_service
 from backend.utils.state import global_state
 from backend.utils.cache import cache_instance
+from backend.utils.limiter import limiter
 
 router = APIRouter(prefix="/insights", tags=["insights"])
 
 @router.get("", response_model=InsightsResponse)
-def get_insights():
+@limiter.limit("60/minute")
+def get_insights(request: Request):
     state = global_state.get_state()
     habit_name = state.habit_name or "screen addiction"
     
@@ -52,3 +54,4 @@ def get_insights():
             "next_week_suggestion": "Establish a firm 9:00 PM digital curfew to break night-time routines."
         }
         return InsightsResponse(**fallback)
+

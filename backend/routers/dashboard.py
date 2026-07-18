@@ -1,11 +1,13 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from backend.models.responses import DashboardResponse
 from backend.utils.state import global_state
+from backend.utils.limiter import limiter
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
 @router.get("", response_model=DashboardResponse)
-def get_dashboard():
+@limiter.limit("60/minute")
+def get_dashboard(request: Request):
     state = global_state.get_state()
     
     # Calculate success rate
@@ -40,3 +42,4 @@ def get_dashboard():
         success_rate=round(success_rate, 2),
         milestones=milestones
     )
+

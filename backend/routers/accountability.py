@@ -1,15 +1,17 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from backend.models.tracking import CheckInInput, CheckIn
 from backend.models.responses import RelapseResponse
 from backend.validators.input_validators import sanitize_text
 from backend.services.gemini_service import gemini_service
 from backend.utils.state import global_state
+from backend.utils.limiter import limiter
 from typing import List
 
 router = APIRouter(prefix="/accountability", tags=["accountability"])
 
 @router.post("/checkin")
-def add_checkin(payload: CheckInInput):
+@limiter.limit("60/minute")
+def add_checkin(request: Request, payload: CheckInInput):
     notes_sanitized = sanitize_text(payload.notes) if payload.notes else None
     
     # Store check-in and update streak/points
@@ -48,6 +50,8 @@ def add_checkin(payload: CheckInInput):
         }
 
 @router.get("/history", response_model=List[CheckIn])
-def get_checkin_history():
+@limiter.limit("60/minute")
+def get_checkin_history(request: Request):
     state = global_state.get_state()
     return state.check_ins
+

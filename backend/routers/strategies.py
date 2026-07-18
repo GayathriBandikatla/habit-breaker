@@ -1,14 +1,16 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from backend.models.responses import StrategyItem, StrategyRatingUpdate
 from backend.services.gemini_service import gemini_service
 from backend.utils.state import global_state
 from backend.utils.cache import cache_instance
+from backend.utils.limiter import limiter
 from typing import List
 
 router = APIRouter(prefix="/strategies", tags=["strategies"])
 
 @router.get("", response_model=List[StrategyItem])
-def get_strategies():
+@limiter.limit("60/minute")
+def get_strategies(request: Request):
     state = global_state.get_state()
     habit_name = state.habit_name or "screen addiction"
     
@@ -56,6 +58,8 @@ def get_strategies():
     return merged_strategies
 
 @router.post("/{name}/rate", response_model=dict)
-def rate_strategy(name: str, payload: StrategyRatingUpdate):
+@limiter.limit("60/minute")
+def rate_strategy(request: Request, name: str, payload: StrategyRatingUpdate):
     global_state.update_coping_rating(name, payload.rating)
     return {"message": "Rating updated successfully", "name": name, "rating": payload.rating}
+

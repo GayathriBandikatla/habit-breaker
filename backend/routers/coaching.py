@@ -1,16 +1,18 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from backend.models.responses import CoachingRequest, CoachingResponse
 from backend.validators.input_validators import sanitize_text
 from backend.services.gemini_service import gemini_service
 from backend.utils.state import global_state
+from backend.utils.limiter import limiter
 from typing import List, Dict
 
 router = APIRouter(prefix="/coaching", tags=["coaching"])
 
 @router.post("/chat", response_model=CoachingResponse)
-def coaching_chat(request: CoachingRequest):
+@limiter.limit("60/minute")
+def coaching_chat(request: Request, input_data: CoachingRequest):
     # Sanitize user message
-    sanitized_msg = sanitize_text(request.message)
+    sanitized_msg = sanitize_text(input_data.message)
     if not sanitized_msg:
         raise HTTPException(status_code=400, detail="Message cannot be empty.")
 
@@ -58,5 +60,7 @@ def coaching_chat(request: CoachingRequest):
         raise HTTPException(status_code=502, detail=f"Coaching service failed: {str(e)}")
 
 @router.get("/history", response_model=List[Dict[str, str]])
-def get_chat_history():
+@limiter.limit("60/minute")
+def get_chat_history(request: Request):
     return global_state.get_chat_history()
+

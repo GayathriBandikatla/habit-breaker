@@ -1,11 +1,13 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from backend.utils.state import global_state
+from backend.utils.limiter import limiter
 from typing import List, Dict, Any
 
 router = APIRouter(prefix="/gamification", tags=["gamification"])
 
 @router.get("")
-def get_gamification():
+@limiter.limit("60/minute")
+def get_gamification(request: Request):
     state = global_state.get_state()
     
     # Calculate progress toward next point milestone (e.g., 500, 1000)
@@ -46,3 +48,4 @@ def get_gamification():
         "progress_percentage": progress_percentage,
         "badges": badges_report
     }
+

@@ -1,13 +1,15 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from backend.models.tracking import HabitAssessmentInput, AssessmentResponse
 from backend.validators.input_validators import validate_habit_input
 from backend.services.gemini_service import gemini_service
 from backend.utils.state import global_state
+from backend.utils.limiter import limiter
 
 router = APIRouter(prefix="/assessment", tags=["assessment"])
 
 @router.post("", response_model=AssessmentResponse)
-def create_assessment(input_data: HabitAssessmentInput):
+@limiter.limit("60/minute")
+def create_assessment(request: Request, input_data: HabitAssessmentInput):
     # Validate and sanitize input
     name, freq, triggers, impact, motivation = validate_habit_input(
         input_data.habit_name,
@@ -39,8 +41,10 @@ def create_assessment(input_data: HabitAssessmentInput):
         raise HTTPException(status_code=502, detail=f"Failed to generate assessment: {str(e)}")
 
 @router.get("", response_model=AssessmentResponse)
-def get_assessment():
+@limiter.limit("60/minute")
+def get_assessment(request: Request):
     state = global_state.get_state()
     if not state.assessment:
         raise HTTPException(status_code=404, detail="No assessment found. Please complete the assessment form first.")
     return state.assessment
+
