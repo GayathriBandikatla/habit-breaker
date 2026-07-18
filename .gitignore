@@ -33,3 +33,8 @@ dist-ssr/
 # OS Files
 .DS_Store
 Thumbs.db
+
+# Local State
+habit_state.json
+backend/habit_state.json
+
